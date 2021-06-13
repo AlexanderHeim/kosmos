@@ -22,8 +22,8 @@ impl Serialization<Network> for Network {
         }
         neurons.sort_by(|a, b| a.id.cmp(&b.id));
         connections.sort_by(|a, b| a.id.cmp(&b.id));
-        let amount_in = neurons.iter().filter(|n| n.id == 0).count() as u32;
-        let amount_out = neurons.iter().filter(|n| n.id == 1).count() as u32;
+        let amount_in = neurons.iter().filter(|n| n.ntype == 0).count() as u32;
+        let amount_out = neurons.iter().filter(|n| n.ntype == 1).count() as u32;
 
         //let in_ids: Vec<u32> = neurons.iter().filter(|n| n.id == 0).map(|n| n.id).collect();
         let mut traced_ids: Vec<u32> = neurons.iter().filter(|n| n.ntype == 1).map(|n| n.id).collect();
@@ -106,7 +106,7 @@ mod test {
 
     #[test]
     pub fn serialization_test_2() {
-        let n = "N0,0,0,0;N1,0,0,0;N2,2,0,0;N3,2,0,0;N4,1,0,0;C5,0,2,4,2,0;C6,0,3,4,1,0;C1,0,0,2,1,0;C2,0,1,3,1,0;C3,0,0,3,1,0;C4,0,1,2,1,0;";
+        let n = "N0,0,0,0;N1,0,0,0;N2,2,0,0;N3,2,0,0;N4,1,0,0;C4,0,2,4,2,0;C6,0,3,4,1,0;C0,0,0,2,1,0;C1,0,1,3,1,0;C2,0,0,3,1,0;C3,0,1,2,1,0;";
         let network = Network::deserialize(n);
         let s = network.serialize();
         assert_eq!(n, s);
@@ -114,7 +114,7 @@ mod test {
 
     #[test]
     pub fn feed_test_1() {
-        let n = "N0,0,0,0;N1,1,0,0;C1,0,0,1,3,2;";
+        let n = "N0,0,0,0;N1,1,0,0;C0,0,0,1,3,2;";
         let mut network = Network::deserialize(n);
         let r = network.feed(&[3.0]);
         assert_eq!(r.len(), 1);
@@ -123,10 +123,20 @@ mod test {
 
     #[test]
     pub fn feed_test_2() {
-        let n = "N0,0,0,0;N1,2,0,0;N2,2,0,0;N3,1,0,0;C1,0,0,1,3,2;C2,0,0,2,-3,4;C3,0,1,3,2.57,2.332;C4,0,2,3,-1.043,-0.00012;";
+        let n = "N0,0,0,0;N1,2,0,0;N2,2,0,0;N3,1,0,0;C0,0,0,1,3,2;C1,0,0,2,-3,4;C2,0,1,3,2.57,2.332;C3,0,2,3,-1.043,-0.00012;";
         let mut network = Network::deserialize(n);
         let r = network.feed(&[1.42]);
         assert_eq!(r.len(), 1);
         assert_eq!(r[0], 18.69126);
+    }
+
+    #[test]
+    pub fn feed_test_3() {
+        let n = "N0,0,0,0;N1,0,0,0;N2,2,0,0;N3,1,0,0;N4,1,0,0;C0,0,0,3,2,1;C1,0,0,2,1.5,-2;C2,0,1,2,-0.4,0;C3,0,2,3,-0.004,1;C4,0,2,4,0.5,-0.2;";
+        let mut network = Network::deserialize(n);
+        let r = network.feed(&[1.42, 2.34]);
+        assert_eq!(r.len(), 2);
+        assert_eq!(format!("{:.3}", r[0]), format!("{}", -0.603));
+        assert_eq!(format!("{:.6}", r[1]), format!("{}", 4.843224));
     }
 }
