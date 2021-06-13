@@ -71,6 +71,27 @@ impl Serialization<Network> for Network {
     }
 }
 
+impl Network {
+    pub fn feed(&mut self, food: &[f32]) -> Vec<f32> {
+        for i in 0..self.amount_in {
+            self.neurons[i as usize].value = food[i as usize];
+        }
+        let amount_layers = self.layers.len();
+        for l in 1..(amount_layers+1) {
+            for c in &self.layers[amount_layers-l] {
+                let id_in = c.in_id;
+                let id_on = c.on_id;
+                self.neurons[id_on as usize].value += c.feed(self.neurons[id_in as usize].value);
+            }
+        }
+        let mut result: Vec<f32> = Vec::new();
+        for i in 1..(self.amount_out+1) {
+            result.push(self.neurons[self.neurons.len()-i as usize].value);
+        }
+        result
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::{Network, Serialization};
@@ -85,10 +106,27 @@ mod test {
 
     #[test]
     pub fn serialization_test_2() {
-        let n = "N0,0,0,0;N1,0,0,0;N2,2,0,0;N3,2,0,0;N4,1,0,0;C5,0,2,4,1,0;C6,0,3,4,1,0;C1,0,0,2,1,0;C2,0,1,3,1,0;C3,0,0,3,1,0;C4,0,1,2,1,0;";
+        let n = "N0,0,0,0;N1,0,0,0;N2,2,0,0;N3,2,0,0;N4,1,0,0;C5,0,2,4,2,0;C6,0,3,4,1,0;C1,0,0,2,1,0;C2,0,1,3,1,0;C3,0,0,3,1,0;C4,0,1,2,1,0;";
         let network = Network::deserialize(n);
-        //println!("{:#?}", network);
         let s = network.serialize();
         assert_eq!(n, s);
+    }
+
+    #[test]
+    pub fn feed_test_1() {
+        let n = "N0,0,0,0;N1,1,0,0;C1,0,0,1,3,2;";
+        let mut network = Network::deserialize(n);
+        let r = network.feed(&[3.0]);
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0], 11.0);
+    }
+
+    #[test]
+    pub fn feed_test_2() {
+        let n = "N0,0,0,0;N1,2,0,0;N2,2,0,0;N3,1,0,0;C1,0,0,1,3,2;C2,0,0,2,-3,4;C3,0,1,3,2.57,2.332;C4,0,2,3,-1.043,-0.00012;";
+        let mut network = Network::deserialize(n);
+        let r = network.feed(&[1.42]);
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0], 18.69126);
     }
 }

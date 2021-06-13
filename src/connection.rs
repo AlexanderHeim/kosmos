@@ -32,6 +32,12 @@ impl Serialization<Connection> for Connection {
     }
 }
 
+impl Connection {
+    pub fn feed(&self, input: f32) -> f32 {
+        self.weight * input + self.bias
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::connection::Connection;
